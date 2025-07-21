@@ -19,7 +19,21 @@ async def _call_llm_with_retries(client: AsyncOpenAI, messages: list[dict], **kw
     return r.choices[0].message.content or ""
 
 async def call_llm(client: AsyncOpenAI, messages: list[dict], **kwargs) -> str:
-    """Wrapper that handles final exceptions after retries are exhausted."""
+    """Call LLM with a single conversation.
+    
+    Args:
+        client: AsyncOpenAI client instance
+        messages: List of message dicts with 'role' and 'content' keys
+        **kwargs: Additional parameters passed to OpenAI API (model, temperature, etc.)
+        
+    Returns:
+        String response from the LLM, or empty string if all retries failed
+        
+    Example:
+        >>> client = AsyncOpenAI()
+        >>> messages = [{"role": "user", "content": "Hello"}]
+        >>> result = await call_llm(client, messages, model="gpt-4o-mini")
+    """
     try:
         return await _call_llm_with_retries(client, messages, **kwargs)
     except Exception as e:
@@ -52,7 +66,27 @@ async def _async_batch_infer(convos: list[list[dict]], base_url: str = "http://a
         return await _batch_infer(client, convos, **kwargs)
 
 def infer(convos: list[list[dict]], base_url: str = "http://api.openai.com/v1", **kwargs) -> list[str]:
-    """Synchronous wrapper for the async function."""
+    """Batch inference on multiple conversations.
+    
+    Args:
+        convos: List of conversations, where each conversation is a list of message dicts
+        base_url: OpenAI API base URL (default: "http://api.openai.com/v1")
+        **kwargs: Additional parameters:
+            - model: Model name (e.g., "gpt-4o-mini")
+            - max_concurrent: Max concurrent requests (default: 64)
+            - temperature, max_tokens, etc.: OpenAI API parameters
+            
+    Returns:
+        List of string responses, one per conversation
+        
+    Example:
+        >>> conversations = [
+        ...     [{"role": "user", "content": "What is 2+2?"}],
+        ...     [{"role": "user", "content": "What is 3+3?"}]
+        ... ]
+        >>> results = infer(conversations, model="gpt-4o-mini", max_concurrent=10)
+        >>> print(results)  # ['4', '6']
+    """
     return asyncio.run(_async_batch_infer(convos, base_url, **kwargs))
 
 if __name__ == "__main__":
