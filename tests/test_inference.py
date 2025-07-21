@@ -3,7 +3,7 @@ import asyncio
 import os
 import pytest
 from openai import AsyncOpenAI
-from simple_infer import infer, call_llm
+from simple_infer import batch_infer_conversations, call_llm
 
 
 @pytest.fixture
@@ -30,11 +30,11 @@ def simple_conversations():
     ]
 
 
-def test_sync_infer(openai_key, simple_conversations):
-    """Test synchronous inference with gpt-4.1-nano."""
+def test_sync_batch_infer_conversations(openai_key, simple_conversations):
+    """Test synchronous batch inference with gpt-4.1-nano."""
     os.environ["OPENAI_API_KEY"] = openai_key
     
-    results = infer(
+    results = batch_infer_conversations(
         simple_conversations,
         base_url="https://api.openai.com/v1",
         model="gpt-4.1-nano",
@@ -84,7 +84,7 @@ def test_empty_conversations(openai_key):
     """Test handling of empty conversation list."""
     os.environ["OPENAI_API_KEY"] = openai_key
     
-    results = infer([], model="gpt-4.1-nano")
+    results = batch_infer_conversations([], model="gpt-4.1-nano")
     
     assert results == []
 

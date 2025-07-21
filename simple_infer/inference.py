@@ -2,7 +2,7 @@
 Performant, Batch Inference File, w/o the batch endpoint.
 
 Exposes two functions:
-1. `infer` - Synchronous wrapper for the async `_async_batch_infer` function.
+1. `batch_infer_conversations` - Synchronous wrapper for the async `_async_batch_infer` function.
 2. `call_llm` - Async function that calls the LLM.
 """
 import asyncio
@@ -65,7 +65,7 @@ async def _async_batch_infer(convos: list[list[dict]], base_url: str = "http://a
         # Do the actual work
         return await _batch_infer(client, convos, **kwargs)
 
-def infer(convos: list[list[dict]], base_url: str = "http://api.openai.com/v1", **kwargs) -> list[str]:
+def batch_infer_conversations(convos: list[list[dict]], base_url: str = "http://api.openai.com/v1", **kwargs) -> list[str]:
     """Batch inference on multiple conversations.
     
     Args:
@@ -84,7 +84,7 @@ def infer(convos: list[list[dict]], base_url: str = "http://api.openai.com/v1", 
         ...     [{"role": "user", "content": "What is 2+2?"}],
         ...     [{"role": "user", "content": "What is 3+3?"}]
         ... ]
-        >>> results = infer(conversations, model="gpt-4.1-nano", max_concurrent=10)
+        >>> results = batch_infer_conversations(conversations, model="gpt-4.1-nano", max_concurrent=10)
         >>> print(results)  # ['4', '6']
     """
     return asyncio.run(_async_batch_infer(convos, base_url, **kwargs))
@@ -101,7 +101,7 @@ if __name__ == "__main__":
         ]
     ]
     
-    results = infer(convos, max_concurrent=32, model="Qwen/Qwen3-32B-FP8")
+    results = batch_infer_conversations(convos, max_concurrent=32, model="Qwen/Qwen3-32B-FP8")
     
     for i, r in enumerate(results):
         logger.info(f"[{i}] {r or 'FAILED'}")
