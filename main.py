@@ -1,0 +1,73 @@
+"""
+Performant, Batch Inference File, w/o the batch endpoint.
+
+Exposes two functions:
+1. `infer` - Synchronous wrapper for the async `_async_batch_infer` function.
+2. `call_llm` - Async function that calls the LLM.
+"""
+import asyncio
+from openai import AsyncOpenAI
+from tenacity import retry, stop_after_attempt, wait_exponential
+from loguru import logger
+import httpx
+from tqdm.asyncio import tqdm_asyncio
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10))
+async def _call_llm_with_retries(client: AsyncOpenAI, messages: list[dict], **kwargs) -> str:
+    """Internal function that actually makes the API call - tenacity will retry this."""
+    r = await client.chat.completions.create(messages=messages, **kwargs)
+    return r.choices[0].message.content or ""
+
+async def call_llm(client: AsyncOpenAI, messages: list[dict], **kwargs) -> str:
+    """Wrapper that handles final exceptions after retries are exhausted."""
+    try:
+        return await _call_llm_with_retries(client, messages, **kwargs)
+    except Exception as e:
+        logger.warning(f"API call failed after all retries: {e}")
+        return ""
+
+async def _batch_infer(client: AsyncOpenAI, convos: list[list[dict]], max_concurrent: int = 64, **kwargs) -> list[str]:
+    sem = asyncio.Semaphore(max_concurrent)
+
+    async def process(msgs):
+        async with sem:
+            return await call_llm(client, msgs, **kwargs)
+    
+    tasks = [process(msgs) for msgs in convos]
+    return await tqdm_asyncio.gather(*tasks, desc="LLM calls")
+
+async def _async_batch_infer(convos: list[list[dict]], base_url: str = "http://api.openai.com/v1", **kwargs) -> list[str]:
+    """Async function that creates and manages the HTTP client properly."""
+    max_conn = kwargs.get('max_concurrent', 64)
+    
+    # Create HTTP client in the same async context
+    async with httpx.AsyncClient(
+        limits=httpx.Limits(max_connections=max_conn),
+        timeout=httpx.Timeout(60.0)
+    ) as http_client:
+        # Create OpenAI client with our HTTP client
+        client = AsyncOpenAI(base_url=base_url, http_client=http_client)
+        
+        # Do the actual work
+        return await _batch_infer(client, convos, **kwargs)
+
+def infer(convos: list[list[dict]], base_url: str = "http://api.openai.com/v1", **kwargs) -> list[str]:
+    """Synchronous wrapper for the async function."""
+    return asyncio.run(_async_batch_infer(convos, base_url, **kwargs))
+
+if __name__ == "__main__":
+    convos = [
+        [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": "What is the capital of France?"},
+        ],
+        [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": "What is the capital of Italy?"},
+        ]
+    ]
+    
+    results = infer(convos, max_concurrent=32, model="Qwen/Qwen3-32B-FP8")
+    
+    for i, r in enumerate(results):
+        logger.info(f"[{i}] {r or 'FAILED'}")
