@@ -24,7 +24,7 @@ conversations = [
     ]
 ]
 
-results = infer(conversations, model="gpt-4o-mini", max_concurrent=32)
+results = infer(conversations, model="gpt-4.1-nano", max_concurrent=32)
 ```
 
 ## Features

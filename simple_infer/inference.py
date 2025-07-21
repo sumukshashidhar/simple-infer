@@ -32,7 +32,7 @@ async def call_llm(client: AsyncOpenAI, messages: list[dict], **kwargs) -> str:
     Example:
         >>> client = AsyncOpenAI()
         >>> messages = [{"role": "user", "content": "Hello"}]
-        >>> result = await call_llm(client, messages, model="gpt-4o-mini")
+        >>> result = await call_llm(client, messages, model="gpt-4.1-nano")
     """
     try:
         return await _call_llm_with_retries(client, messages, **kwargs)
@@ -72,7 +72,7 @@ def infer(convos: list[list[dict]], base_url: str = "http://api.openai.com/v1", 
         convos: List of conversations, where each conversation is a list of message dicts
         base_url: OpenAI API base URL (default: "http://api.openai.com/v1")
         **kwargs: Additional parameters:
-            - model: Model name (e.g., "gpt-4o-mini")
+            - model: Model name (e.g., "gpt-4.1-nano")
             - max_concurrent: Max concurrent requests (default: 64)
             - temperature, max_tokens, etc.: OpenAI API parameters
             
@@ -84,7 +84,7 @@ def infer(convos: list[list[dict]], base_url: str = "http://api.openai.com/v1", 
         ...     [{"role": "user", "content": "What is 2+2?"}],
         ...     [{"role": "user", "content": "What is 3+3?"}]
         ... ]
-        >>> results = infer(conversations, model="gpt-4o-mini", max_concurrent=10)
+        >>> results = infer(conversations, model="gpt-4.1-nano", max_concurrent=10)
         >>> print(results)  # ['4', '6']
     """
     return asyncio.run(_async_batch_infer(convos, base_url, **kwargs))

@@ -24,7 +24,7 @@ Basic Usage
        [{"role": "user", "content": "What is 3+3?"}]
    ]
    
-   results = infer(conversations, model="gpt-4o-mini")
+   results = infer(conversations, model="gpt-4.1-nano")
    print(results)  # ['4', '6']
 
 Async Usage
@@ -39,7 +39,7 @@ Async Usage
    async def main():
        client = AsyncOpenAI()
        messages = [{"role": "user", "content": "Hello!"}]
-       result = await call_llm(client, messages, model="gpt-4o-mini")
+       result = await call_llm(client, messages, model="gpt-4.1-nano")
        print(result)
    
    asyncio.run(main())
@@ -59,7 +59,7 @@ Batch Processing with Concurrency
    
    results = infer(
        conversations,
-       model="gpt-4o-mini",
+       model="gpt-4.1-nano",
        max_concurrent=32,
        temperature=0.7
    )
