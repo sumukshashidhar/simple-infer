@@ -1,9 +1,7 @@
 """
 Performant, Batch Inference File, w/o the batch endpoint.
 
-Exposes two functions:
-1. `batch_infer_conversations` - Synchronous wrapper for the async `_async_batch_infer` function.
-2. `call_llm` - Async function that calls the LLM.
+Exposes functions for both raw dict-based and Pydantic model-based inference.
 """
 import asyncio
 from openai import AsyncOpenAI
@@ -11,6 +9,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from loguru import logger
 import httpx
 from tqdm.asyncio import tqdm_asyncio
+from .models import InferenceJob, InferenceResult
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10))
 async def _call_llm_with_retries(client: AsyncOpenAI, messages: list[dict], **kwargs) -> str:
@@ -88,6 +87,35 @@ def batch_infer_conversations(convos: list[list[dict]], base_url: str = "https:/
         >>> print(results)  # ['4', '6']
     """
     return asyncio.run(_async_batch_infer(convos, base_url, **kwargs))
+
+
+def batch_infer_job(job: InferenceJob) -> InferenceResult:
+    """Batch inference using a Pydantic InferenceJob model.
+    
+    Args:
+        job: InferenceJob instance containing conversations and configuration
+        
+    Returns:
+        InferenceResult containing responses and metadata
+        
+    Example:
+        >>> from simple_infer.models import InferenceJob, Conversation, Message
+        >>> job = InferenceJob(
+        ...     conversations=[
+        ...         Conversation(messages=[
+        ...             Message(role="user", content="What is 2+2?")
+        ...         ])
+        ...     ],
+        ...     model="gpt-4o-mini",
+        ...     max_concurrent=10
+        ... )
+        >>> result = batch_infer_job(job)
+        >>> print(result.responses[0])  # '4'
+    """
+    convos = job.to_conversations_list()
+    kwargs = job.get_api_kwargs()
+    responses = batch_infer_conversations(convos, **kwargs)
+    return InferenceResult.from_responses(responses, job)
 
 if __name__ == "__main__":
     convos = [

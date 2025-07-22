@@ -8,30 +8,52 @@ Minimal, hackable batch inference library for LLMs. No batch endpoints needed.
 pip install simple-infer
 ```
 
-## Usage
+## Quick Start
+
+### Dict-based API (Simple)
 
 ```python
-from simple_infer import infer
+from simple_infer import batch_infer_conversations
 
 conversations = [
-    [
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": "What is the capital of France?"},
-    ],
-    [
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": "What is 2+2?"},
-    ]
+    [{"role": "user", "content": "What is 2+2?"}],
+    [{"role": "user", "content": "What is 3+3?"}]
 ]
 
-results = infer(conversations, model="gpt-4.1-nano", max_concurrent=32)
+results = batch_infer_conversations(conversations, model="gpt-4o-mini")
+print(results)  # ['4', '6']
+```
+
+### Pydantic API (Structured)
+
+```python
+from simple_infer import batch_infer_job, InferenceJob, Conversation, Message
+
+job = InferenceJob(
+    conversations=[
+        Conversation(messages=[
+            Message(role="user", content="What is 2+2?")
+        ]),
+        Conversation(messages=[
+            Message(role="user", content="What is 3+3?")
+        ])
+    ],
+    model="gpt-4o-mini",
+    max_concurrent=10,
+    temperature=0.7
+)
+
+result = batch_infer_job(job)
+print(f"Successful: {result.success_count}, Failed: {result.failure_count}")
+print(result.responses)
 ```
 
 ## Features
 
-- **Simple**: Two main functions - `infer()` and `call_llm()`
+- **Simple**: Two APIs - dict-based for quick scripts, Pydantic for structured use
 - **Fast**: Async batch processing with configurable concurrency
-- **Reliable**: Built-in retries with exponential backoff
+- **Reliable**: Built-in retries with exponential backoff  
+- **Typed**: Full Pydantic model support with validation
 - **Hackable**: Clean, readable code you can modify
 
 ## Development
