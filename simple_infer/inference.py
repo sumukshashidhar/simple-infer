@@ -50,7 +50,7 @@ async def _batch_infer(client: AsyncOpenAI, convos: list[list[dict]], max_concur
     tasks = [process(msgs) for msgs in convos]
     return await tqdm_asyncio.gather(*tasks, desc="LLM calls")
 
-async def _async_batch_infer(convos: list[list[dict]], base_url: str = "http://api.openai.com/v1", **kwargs) -> list[str]:
+async def _async_batch_infer(convos: list[list[dict]], base_url: str = "https://api.openai.com/v1", **kwargs) -> list[str]:
     """Async function that creates and manages the HTTP client properly."""
     max_conn = kwargs.get('max_concurrent', 64)
     
@@ -65,12 +65,12 @@ async def _async_batch_infer(convos: list[list[dict]], base_url: str = "http://a
         # Do the actual work
         return await _batch_infer(client, convos, **kwargs)
 
-def batch_infer_conversations(convos: list[list[dict]], base_url: str = "http://api.openai.com/v1", **kwargs) -> list[str]:
+def batch_infer_conversations(convos: list[list[dict]], base_url: str = "https://api.openai.com/v1", **kwargs) -> list[str]:
     """Batch inference on multiple conversations.
     
     Args:
         convos: List of conversations, where each conversation is a list of message dicts
-        base_url: OpenAI API base URL (default: "http://api.openai.com/v1")
+        base_url: OpenAI API base URL (default: "https://api.openai.com/v1")
         **kwargs: Additional parameters:
             - model: Model name (e.g., "gpt-4.1-nano")
             - max_concurrent: Max concurrent requests (default: 64)
